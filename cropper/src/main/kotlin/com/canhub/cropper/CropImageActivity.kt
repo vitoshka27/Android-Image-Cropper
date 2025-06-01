@@ -116,47 +116,11 @@ open class CropImageActivity :
       binding.root.setBackgroundColor(activityBackgroundColor)
     }
 
-    // Убираем тулбар и меню
-    // supportActionBar?.hide() // если был тулбар
+    // Убираем тулбар и меню полностью
+    supportActionBar?.hide()
 
     onBackPressedDispatcher.addCallback {
       setResultCancel()
-    }
-  }
-
-  private fun setCustomizations() {
-    cropImageOptions.activityBackgroundColor.let { activityBackgroundColor ->
-      binding.root.setBackgroundColor(activityBackgroundColor)
-    }
-
-    supportActionBar?.let {
-      title = cropImageOptions.activityTitle.ifEmpty { "" }
-      it.setDisplayHomeAsUpEnabled(true)
-      cropImageOptions.toolbarColor?.let { toolbarColor ->
-        it.setBackgroundDrawable(ColorDrawable(toolbarColor))
-      }
-      cropImageOptions.toolbarTitleColor?.let { toolbarTitleColor ->
-        val spannableTitle: Spannable = SpannableString(title)
-        spannableTitle.setSpan(
-          ForegroundColorSpan(toolbarTitleColor),
-          0,
-          spannableTitle.length,
-          Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
-        )
-        title = spannableTitle
-      }
-      cropImageOptions.toolbarBackButtonColor?.let { backBtnColor ->
-        try {
-          val upArrow = ContextCompat.getDrawable(
-            this,
-            R.drawable.ic_arrow_back_24,
-          )
-          upArrow?.colorFilter = PorterDuffColorFilter(backBtnColor, PorterDuff.Mode.SRC_ATOP)
-          it.setHomeAsUpIndicator(upArrow)
-        } catch (e: Exception) {
-          e.printStackTrace()
-        }
-      }
     }
   }
 
