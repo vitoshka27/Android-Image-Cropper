@@ -18,6 +18,7 @@ import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import android.widget.ImageButton
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
@@ -74,6 +75,23 @@ open class CropImageActivity :
     cropImageOptions =
       bundle?.parcelable(CropImage.CROP_IMAGE_EXTRA_OPTIONS) ?: CropImageOptions()
 
+    // --- Новый UI: кнопки внизу ---
+    binding.root.findViewById<ImageButton>(R.id.btnClose)?.setOnClickListener {
+        setResultCancel()
+    }
+    binding.root.findViewById<ImageButton>(R.id.btnCrop)?.setOnClickListener {
+        cropImage()
+    }
+    binding.root.findViewById<ImageButton>(R.id.btnRotateRight)?.setOnClickListener {
+        rotateImage(cropImageOptions.rotationDegrees)
+    }
+    binding.root.findViewById<ImageButton>(R.id.btnFlipH)?.setOnClickListener {
+        cropImageView?.flipImageHorizontally()
+    }
+    binding.root.findViewById<ImageButton>(R.id.btnFlipV)?.setOnClickListener {
+        cropImageView?.flipImageVertically()
+    }
+
     if (savedInstanceState == null) {
       if (cropImageUri == null || cropImageUri == Uri.EMPTY) {
         when {
@@ -94,7 +112,12 @@ open class CropImageActivity :
       latestTmpUri = savedInstanceState.getString(BUNDLE_KEY_TMP_URI)?.toUri()
     }
 
-    setCustomizations()
+    cropImageOptions.activityBackgroundColor.let { activityBackgroundColor ->
+      binding.root.setBackgroundColor(activityBackgroundColor)
+    }
+
+    // Убираем тулбар и меню
+    // supportActionBar?.hide() // если был тулбар
 
     onBackPressedDispatcher.addCallback {
       setResultCancel()
@@ -236,99 +259,6 @@ open class CropImageActivity :
     outState.putString(BUNDLE_KEY_TMP_URI, latestTmpUri.toString())
   }
 
-  override fun onCreateOptionsMenu(menu: Menu): Boolean {
-    if (cropImageOptions.skipEditing) return true
-    menuInflater.inflate(R.menu.crop_image_menu, menu)
-
-    if (!cropImageOptions.allowRotation) {
-      menu.removeItem(R.id.ic_rotate_left_24)
-      menu.removeItem(R.id.ic_rotate_right_24)
-    } else if (cropImageOptions.allowCounterRotation) {
-      menu.findItem(R.id.ic_rotate_left_24).isVisible = true
-    }
-
-    if (!cropImageOptions.allowFlipping) menu.removeItem(R.id.ic_flip_24)
-
-    if (cropImageOptions.cropMenuCropButtonTitle != null) {
-      menu.findItem(R.id.crop_image_menu_crop).title =
-        cropImageOptions.cropMenuCropButtonTitle
-    }
-
-    var cropIcon: Drawable? = null
-    try {
-      if (cropImageOptions.cropMenuCropButtonIcon != 0) {
-        cropIcon = ContextCompat.getDrawable(this, cropImageOptions.cropMenuCropButtonIcon)
-        menu.findItem(R.id.crop_image_menu_crop).icon = cropIcon
-      }
-    } catch (e: Exception) {
-      Log.w("AIC", "Failed to read menu crop drawable", e)
-    }
-
-    if (cropImageOptions.activityMenuIconColor != 0) {
-      updateMenuItemIconColor(
-        menu,
-        R.id.ic_rotate_left_24,
-        cropImageOptions.activityMenuIconColor,
-      )
-      updateMenuItemIconColor(
-        menu,
-        R.id.ic_rotate_right_24,
-        cropImageOptions.activityMenuIconColor,
-      )
-      updateMenuItemIconColor(menu, R.id.ic_flip_24, cropImageOptions.activityMenuIconColor)
-
-      if (cropIcon != null) {
-        updateMenuItemIconColor(
-          menu,
-          R.id.crop_image_menu_crop,
-          cropImageOptions.activityMenuIconColor,
-        )
-      }
-    }
-    cropImageOptions.activityMenuTextColor?.let { menuItemsTextColor ->
-      val menuItemIds = listOf(
-        R.id.ic_rotate_left_24,
-        R.id.ic_rotate_right_24,
-        R.id.ic_flip_24,
-        R.id.ic_flip_24_horizontally,
-        R.id.ic_flip_24_vertically,
-        R.id.crop_image_menu_crop,
-      )
-      for (itemId in menuItemIds) {
-        updateMenuItemTextColor(menu, itemId, menuItemsTextColor)
-      }
-    }
-    return true
-  }
-
-  override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-    R.id.crop_image_menu_crop -> {
-      cropImage()
-      true
-    }
-    R.id.ic_rotate_left_24 -> {
-      rotateImage(-cropImageOptions.rotationDegrees)
-      true
-    }
-    R.id.ic_rotate_right_24 -> {
-      rotateImage(cropImageOptions.rotationDegrees)
-      true
-    }
-    R.id.ic_flip_24_horizontally -> {
-      cropImageView?.flipImageHorizontally()
-      true
-    }
-    R.id.ic_flip_24_vertically -> {
-      cropImageView?.flipImageVertically()
-      true
-    }
-    android.R.id.home -> {
-      setResultCancel()
-      true
-    }
-    else -> super.onOptionsItemSelected(item)
-  }
-
   protected open fun onPickImageResult(resultUri: Uri?) {
     when (resultUri) {
       null -> setResultCancel()
@@ -430,52 +360,6 @@ open class CropImageActivity :
     intent.extras?.let(intent::putExtras)
     intent.putExtra(CropImage.CROP_IMAGE_EXTRA_RESULT, result)
     return intent
-  }
-
-  /**
-   * Update the color of a specific menu item to the given color.
-   */
-  open fun updateMenuItemIconColor(menu: Menu, itemId: Int, color: Int) {
-    val menuItem = menu.findItem(itemId)
-    if (menuItem != null) {
-      val menuItemIcon = menuItem.icon
-      if (menuItemIcon != null) {
-        try {
-          menuItemIcon.apply {
-            mutate()
-            colorFilter = BlendModeColorFilterCompat.createBlendModeColorFilterCompat(
-              color,
-              BlendModeCompat.SRC_ATOP,
-            )
-          }
-          menuItem.icon = menuItemIcon
-        } catch (e: Exception) {
-          Log.w("AIC", "Failed to update menu item color", e)
-        }
-      }
-    }
-  }
-
-  /**
-   * Update the color of a specific menu item to the given color.
-   */
-  open fun updateMenuItemTextColor(menu: Menu, itemId: Int, color: Int) {
-    val menuItem = menu.findItem(itemId) ?: return
-    val menuTitle = menuItem.title
-    if (menuTitle?.isNotBlank() == true) {
-      try {
-        val spannableTitle: Spannable = SpannableString(menuTitle)
-        spannableTitle.setSpan(
-          ForegroundColorSpan(color),
-          0,
-          spannableTitle.length,
-          Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
-        )
-        menuItem.title = spannableTitle
-      } catch (e: Exception) {
-        Log.w("AIC", "Failed to update menu item color", e)
-      }
-    }
   }
 
   enum class Source { CAMERA, GALLERY }

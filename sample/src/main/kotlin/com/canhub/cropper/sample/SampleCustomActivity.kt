@@ -107,11 +107,6 @@ internal class SampleCustomActivity : CropImageActivity() {
     super.setResultCancel()
   }
 
-  override fun updateMenuItemIconColor(menu: Menu, itemId: Int, color: Int) {
-    Timber.tag("AIC-Sample").i("If not using your layout, this can be one option to change colours")
-    super.updateMenuItemIconColor(menu, itemId, color)
-  }
-
   private fun onRotateClick() {
     binding.cropImageView.rotateImage(90)
     updateRotationCounter()
